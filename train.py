@@ -1,5 +1,6 @@
-import torchvision
+import torch, torchvision
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
+from dataset import WheatDataset
 from engine import train_one_epoch, evaluate
 import utils
 import transforms as T
@@ -23,17 +24,16 @@ def get_transform(train):
         transforms.append(T.RandomHorizontalFlip(0.5))
     return T.Compose(transforms)
 
-def main(root, model, optimizer, num_epoch, last_epoch):
+def main(root, model, optimizer, num_epoch, last_epoch, device):
     # train on the GPU or on the CPU, if a GPU is not available
-    device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
     # use our dataset and defined transformations
     dataset = WheatDataset(root, get_transform(train=True))
     dataset_test = WheatDataset(root, get_transform(train=False))
 
     # split the dataset in train and test set
     indices = torch.randperm(len(dataset)).tolist()
-    dataset = torch.utils.data.Subset(dataset, indices[:-50])
-    dataset_test = torch.utils.data.Subset(dataset_test, indices[-50:])
+    dataset = torch.utils.data.Subset(dataset, indices[:50])
+    dataset_test = torch.utils.data.Subset(dataset_test, indices[50:100])
 
     # define training and validation data loaders
     data_loader = torch.utils.data.DataLoader(
@@ -65,7 +65,7 @@ def main(root, model, optimizer, num_epoch, last_epoch):
     print("That's it!")
 
 
-if __name__="__main__":
+if __name__ == "__main__":
     # initialize model and optimizer
     num_classes = 2 # 1 class (wheat head) + background
     model = get_model(num_classes)
@@ -75,21 +75,24 @@ if __name__="__main__":
 
     # load existing checkpoint (comment if none existing)
     from_epoch = 10
-    PATH = f"model_weights_v1_/model_weights_v1_{from_epoch}.tar"
-    checkpoint = torch.load(PATH)
+
+    device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+    PATH = f"/mnt/disks/extra/model_v1/model_weights_v1_{from_epoch}.tar"
+    checkpoint = torch.load(PATH, map_location=device)
     model.load_state_dict(checkpoint['model_state_dict'])
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
 
     # train
-    root = "global-wheat-detection/"
+    root = "/home/ali/kaggle-wheat-detection/"
     num_epochs = 1
-    model, optimizer, last_epoch = main(root, model, optimizer, num_epochs, from_epoch)
+    model, optimizer, last_epoch = main(root, model, optimizer, num_epochs, from_epoch, device)
 
     # save model and optimizer weights
-    PATH = f"model_weights_v1/model_weights_v1_{last_epoch}.tar"
+    PATH = f"/mnt/disks/extra/model_v1/model_weights_v1_{last_epoch}.tar"
     #torch.save(model.state_dict(), PATH with .pt)
     torch.save({
                 'epoch': last_epoch,
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict()
                 }, PATH)
+
