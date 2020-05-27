@@ -1,3 +1,3 @@
 # kaggle-wheat-detection
 
-under construction
+under development
