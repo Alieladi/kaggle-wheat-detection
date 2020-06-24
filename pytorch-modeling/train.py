@@ -1,5 +1,6 @@
 import torchvision
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
+from dataset import WheatDataset
 from engine import train_one_epoch, evaluate
 import utils
 import transforms as T
