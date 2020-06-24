@@ -1,14 +1,17 @@
+import torch, torchvision
+from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 from torchvision.transforms import functional as F
 import os
 from PIL import Image, ImageDraw, ImageFont
 import pandas as pd
 import train
 
-def output(model, root = "global-wheat-detection/test"):
+def output(model, root = "/home/ali/kaggle-wheat-detection/test"):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model.to(device)
     model.eval()
     submissions = {'image_id':[], 'PredictionString':[]}
+    print("filenames", list(os.walk(root)))
     for _, _, filenames in os.walk(root):
         for filename in filenames:
             img_path = os.path.join(root, filename)
@@ -33,9 +36,9 @@ def output(model, root = "global-wheat-detection/test"):
     return df
 
     def display_image(image):
-  fig = plt.figure(figsize=(20, 15))
-  plt.grid(False)
-  plt.imshow(image)
+        fig = plt.figure(figsize=(20, 15))
+        plt.grid(False)
+        plt.imshow(image)
 
 def draw_bounding_box_on_image(image,
                                ymin,
@@ -53,29 +56,29 @@ def draw_bounding_box_on_image(image,
              width=thickness,
              )
 
-if __name__ = "__main__"
+if __name__ == "__main__":
     # initialize model and optimizer
     num_classes = 2 # 1 class (wheat head) + background
-    model = get_model(num_classes)
-
+    model = train.get_model(num_classes)
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     # load existing checkpoint (comment if none existing)
-    epoch = 10
-    PATH = f"model_weights_v1_/model_weights_v1_{epoch}.tar"
-    checkpoint = torch.load(PATH)
+    atepoch = 10
+    PATH = f"/mnt/disks/extra/model_v1/model_weights_v1_{atepoch}.tar"
+    checkpoint = torch.load(PATH, map_location=device)
     model.load_state_dict(checkpoint['model_state_dict'])
 
-    df = output(model)
-    df.to_csv("submission.csv", index=False)
+    root = "/home/ali/kaggle-wheat-detection/test"
+    df = output(model, root=root)
+    df.to_csv("/mnt/disks/extra/model_v1/submission_{atepoch}.csv", index=False)
 
     # display a case:
     img_filename = "51b3e36ab.jpg"
-    img_path = os.path.join(root, "test", img_filename)
+    img_path = os.path.join(root, img_filename)
     im = Image.open(img_path).convert("RGB")
 
     # predict
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model.eval()
-    predictions = model([F.to_tensor(img).to(device)])
+    predictions = model([F.to_tensor(im).to(device)])
     boxes = predictions[0]['boxes']#.tolist()
     scores = predictions[0]['scores']
     max_boxes = 50
@@ -87,4 +90,4 @@ if __name__ = "__main__"
             draw_bounding_box_on_image(im, ymin, xmin, ymax, xmax, thickness=4)
             _len += 1
     print("number of boxes", len(boxes))
-    im.save("51b3e36ab_boxes.jpg")
+    im.save(f"/mnt/disks/extra/model_v1/51b3e36ab_boxes_{atepoch}.jpg")
