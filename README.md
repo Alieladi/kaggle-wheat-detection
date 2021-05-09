@@ -1,3 +1,3 @@
 # kaggle-wheat-detection
 
-under development
+Model development for Wheat detection kaggle competition.
